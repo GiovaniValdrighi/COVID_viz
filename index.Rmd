@@ -28,10 +28,20 @@ temp <- data_coronavirus_brasil  %>% filter(estado == "SP") %>%
   filter(municipio != "") %>%
   select(municipio, estado, data, semanaEpi, populacaoTCU2019, 
          casosAcumulado, casosNovos, obitosAcumulado, obitosNovos) %>%
-  mutate(cidade_grande = ifelse(as.numeric(populacaoTCU2019) > 500000, "1", "0")) %>%
+  mutate(cidade_grande = ifelse(as.numeric(populacaoTCU2019) > 500000, "grandes", "pequenas")) %>%
   group_by(estado, cidade_grande, data) %>%
   summarise(casosNovos = sum(casosNovos),
-            populacao = mean(as.numeric(populacaoTCU2019)))
+            populacao = mean(as.numeric(populacaoTCU2019))) 
+
+
+#calculating moving average
+temp$mov_avg <- 0
+moving_avg <- function(vec, n = 7){
+  return(stats::filter(vec, rep(1 / n, n), sides = 2))
+}
+for(i in c("pequenas", "grandes")){
+  temp[temp$cidade_grande == i, "mov_avg"] = moving_avg(temp[temp$cidade_grande == i, "casosNovos"])
+}
 
 #setting plot information
 title <- "Casos diários no estado de São Paulo agrupados\npelo tamanho das cidades (pop.)"
@@ -44,13 +54,17 @@ color_val <- c("#F26457", "#1D6A73")
 
 
 plot <- ggplot(temp) +
-  geom_area(aes(x = data, y = casosNovos, fill = cidade_grande)) +
+  geom_area(aes(x = data, y = mov_avg, fill = cidade_grande), position = position_stack(reverse = TRUE)) +
   scale_x_date(x_lab, date_breaks = "2 week", date_labels = "%d/%m") +
   scale_y_continuous(y_lab, breaks =y_ticks) +
-  scale_colour_manual(color_title, labels = color_lab, values = color_val, aesthetics = "fill") +
+  scale_colour_manual(color_title, values = color_val, aesthetics = "fill") +
   ggtitle(title) +
   theme(legend.position = "bottom")
-ggplot <- ggplotly(plot)
+ggplot <- ggplotly(plot) %>% 
+  layout(legend = list(orientation = "h", 
+                       x = 0.3, 
+                       y =- 0.25,
+                       title = list(text = "Cidades \t")))
 ggplot
 
 #sd <- SharedData$new(gapminder)
