@@ -21,7 +21,7 @@ library(gapminder)
 ```
 
 ```{r}
-
+#handling the dataframe
 data_coronavirus_brasil <- read.csv("arquivo_coronavirus.csv", sep = ";") 
 data_coronavirus_brasil$data <- as.Date(data_coronavirus_brasil$data, format = "%d/%m/%Y")
 temp <- data_coronavirus_brasil  %>% filter(estado == "SP") %>%
@@ -33,9 +33,23 @@ temp <- data_coronavirus_brasil  %>% filter(estado == "SP") %>%
   summarise(casosNovos = sum(casosNovos),
             populacao = mean(as.numeric(populacaoTCU2019)))
 
+#setting plot information
+title <- "Casos diários no estado de São Paulo agrupados\npelo tamanho das cidades (pop.)"
+x_lab <- "Data"
+y_lab <- "Número de casos"
+y_ticks <- seq(0, 7000, 1000)
+color_title <- "Cidades"
+color_lab <- c("pequenas", "grandes")
+color_val <- c("#F26457", "#1D6A73")
+
+
 plot <- ggplot(temp) +
   geom_area(aes(x = data, y = casosNovos, fill = cidade_grande)) +
-  scale_x_date("Data", date_breaks = "2 week", date_labels = )
+  scale_x_date(x_lab, date_breaks = "2 week", date_labels = "%d/%m") +
+  scale_y_continuous(y_lab, breaks =y_ticks) +
+  scale_colour_manual(color_title, labels = color_lab, values = color_val, aesthetics = "fill") +
+  ggtitle(title) +
+  theme(legend.position = "bottom")
 ggplot <- ggplotly(plot)
 ggplot
 
