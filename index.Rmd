@@ -1,0 +1,49 @@
+---
+title: "Coronavírus - VIZ"
+author: "Giovani de Almeida Valdrighi"
+output: html_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+
+```{r, include = FALSE}
+#necessary packages
+library(crosstalk)
+library(plotly)
+library(ggplot2)
+library(sf)
+library(geobr)
+library(dplyr)
+library(gapminder)
+```
+
+```{r}
+
+data_coronavirus_brasil <- read.csv("arquivo_coronavirus.csv", sep = ";") 
+data_coronavirus_brasil$data <- as.Date(data_coronavirus_brasil$data, format = "%d/%m/%Y")
+temp <- data_coronavirus_brasil  %>% filter(estado == "SP") %>%
+  filter(municipio != "") %>%
+  select(municipio, estado, data, semanaEpi, populacaoTCU2019, 
+         casosAcumulado, casosNovos, obitosAcumulado, obitosNovos) %>%
+  mutate(cidade_grande = ifelse(as.numeric(populacaoTCU2019) > 500000, "1", "0")) %>%
+  group_by(estado, cidade_grande, data) %>%
+  summarise(casosNovos = sum(casosNovos),
+            populacao = mean(as.numeric(populacaoTCU2019)))
+
+plot <- ggplot(temp) +
+  geom_area(aes(x = data, y = casosNovos, fill = cidade_grande)) +
+  scale_x_date("Data", date_breaks = "2 week", date_labels = )
+ggplot <- ggplotly(plot)
+ggplot
+
+#sd <- SharedData$new(gapminder)
+#w <- filter_select("country", "Country:", sd, ~ country)
+#g <- ggplot(sd, aes(year, lifeExp, color = country, group = country)) +
+#  geom_line()
+#gg <- ggplotly(g)
+#bscols(w, gg)
+```
+
