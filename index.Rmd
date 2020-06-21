@@ -1,7 +1,9 @@
 ---
 title: "Coronavírus - VIZ"
 author: "Giovani de Almeida Valdrighi"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r global_options, include=FALSE}
@@ -11,126 +13,85 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 
 ```{r, include = FALSE}
 #necessary packages
-library(crosstalk)
-library(plotly)
 library(ggplot2)
 library(sf)
 library(geobr)
 library(dplyr)
-library(gapminder)
+library(ggrepel)
+library(grid)
+library(gridExtra)
 ```
 
-```{r}
+```{r, results = FALSE}
 #handling the dataframe
-data_coronavirus_brasil <- read.csv("arquivo_coronavirus.csv", sep = ";") 
-data_coronavirus_brasil$data <- as.Date(data_coronavirus_brasil$data, format = "%d/%m/%Y")
-temp <- data_coronavirus_brasil  %>%
-  filter(municipio != "") %>%
-  filter(populacaoTCU2019 != "") %>%
-  select(municipio, estado, data, semanaEpi, populacaoTCU2019, 
-         casosAcumulado, casosNovos, obitosAcumulado, obitosNovos) %>%
-  mutate(cidade_grande = ifelse(as.numeric(populacaoTCU2019) > 500000, "grandes", "pequenas")) %>%
-  group_by(estado, cidade_grande, data) %>%
-  summarise(casosNovos = sum(casosNovos),
-            populacao = mean(as.numeric(populacaoTCU2019)))
+data_original <- read.csv("data_20_06.csv", sep = ";", encoding = "UTF-8")
+data_sp <- data_original %>% 
+  rename(populacao = populacaoTCU2019) %>%
+  select(estado, municipio, data, semanaEpi, populacao, casosAcumulado, casosNovos,
+         obitosAcumulado, obitosNovos, Recuperadosnovos, emAcompanhamentoNovos) %>%
+  filter(municipio != "", estado == "SP") %>%
+  mutate(data = as.Date(data, "%d/%m/%Y"), populacao = as.numeric(populacao)) %>%
+  mutate(tamanhoCidade = ifelse(populacao > 500000, "grande", ifelse(populacao > 100000, "média", "pequena")))
 
-
-#calculating moving average
-temp$mov_avg <- 0
 moving_avg <- function(vec, n = 7){
   return(stats::filter(vec, rep(1 / n, n), sides = 2))
 }
-for(j in unique(temp$estado)){
-  for(i in c("pequenas", "grandes")){
-    if(NROW(temp[(temp$cidade_grande == i) & (temp$estado == j), "casosNovos"]) == 0){
-      temp[(temp$cidade_grande == i) & (temp$estado == j), "mov_avg"] = 0.
-    }else{
-      temp[(temp$cidade_grande == i) & (temp$estado == j), "mov_avg"] = moving_avg(temp[(temp$cidade_grande == i) & (temp$estado == j), "casosNovos"])
-    }
-  }
+data_sp.plot1 <- data_sp %>% group_by(tamanhoCidade, data) %>%
+  summarise(casosNovos = sum(casosNovos)) %>%
+  mutate(mov_avg = 0.)
+
+for(i in c("pequena", "média","grande")){
+    data_sp.plot1[(data_sp.plot1$tamanhoCidade == i), "mov_avg"] = moving_avg(data_sp.plot1[(data_sp.plot1$tamanhoCidade == i), "casosNovos"])
 }
 
 #setting plot information
-title <- "Casos diários no estado de São Paulo agrupados\npelo tamanho das cidades (pop.)"
+title <- "Casos diários no estado de São Paulo agrupados pelo\ntamanho das cidades (pop.)"
 x_lab <- "Data"
+x_lim <- c(min(unique(data_sp.plot1$data)),max(unique(data_sp.plot1$data)) - 7)
 y_lab <- "Número de casos"
-y_ticks <- seq(0, 7000, 1000)
+y_ticks <- seq(0, 8000, 1000)
 color_title <- "Cidades"
-color_lab <- c("pequenas", "grandes")
-color_val <- c("#F26457", "#1D6A73")
+color_lab <- c("pequena", "média", "grande")
+color_val <- c("#450256","#21908d", "#f9e721")
 
 
-plot <- ggplot(temp %>% filter(estado == "SP")) +
-  geom_area(aes(x = data, y = mov_avg, fill = cidade_grande), position = position_stack(reverse = TRUE)) +
-  scale_x_date(x_lab, date_breaks = "2 week", date_labels = "%d/%m") +
-  scale_y_continuous(y_lab, breaks =y_ticks) +
+plot1 <- ggplot(data_sp.plot1) +
+  geom_area(aes(x = data, y = mov_avg, fill = tamanhoCidade), position = position_stack(reverse = TRUE)) +
+  scale_x_date(x_lab, date_breaks = "2 week", date_labels = "%d/%m", limits = x_lim) +
+  scale_y_continuous(y_lab, breaks = y_ticks, limits = c(0, 7000)) +
   scale_colour_manual(color_title, values = color_val, aesthetics = "fill") +
   ggtitle(title) +
   theme(legend.position = "bottom")
-ggplot <- ggplotly(plot) %>% 
-  layout(legend = list(orientation = "h", 
-                       x = 0.3, 
-                       y =- 0.25,
-                       title = list(text = "Cidades \t")))
-plot
-```
-```{r}
-ggplot(temp %>% filter(estado == "AM")) +
-  geom_area(aes(x = data, y = mov_avg, fill = cidade_grande), position = position_stack(reverse = TRUE)) +
-  scale_x_date(x_lab, date_breaks = "2 week", date_labels = "%d/%m") +
-  scale_y_continuous(y_lab, breaks =y_ticks) +
-  scale_colour_manual(color_title, values = color_val, aesthetics = "fill") +
-  ggtitle(title) +
-  theme(legend.position = "bottom")
-ggplot <- ggplotly(plot) %>% 
-  layout(legend = list(orientation = "h", 
-                       x = 0.3, 
-                       y =- 0.25,
-                       title = list(text = "Cidades \t")))
-```
 
-```{r}
-ggplot(temp %>% filter(estado == "RJ")) +
-  geom_area(aes(x = data, y = mov_avg, fill = cidade_grande), position = position_stack(reverse = TRUE)) +
-  scale_x_date(x_lab, date_breaks = "2 week", date_labels = "%d/%m") +
-  scale_y_continuous(y_lab, breaks =y_ticks) +
-  scale_colour_manual(color_title, values = color_val, aesthetics = "fill") +
-  ggtitle(title) +
-  theme(legend.position = "bottom")
-ggplot <- ggplotly(plot) %>% 
-  layout(legend = list(orientation = "h", 
-                       x = 0.3, 
-                       y =- 0.25,
-                       title = list(text = "Cidades \t")))
-```
 
-```{r}
-ggplot(temp %>% filter(estado == "MG")) +
-  geom_area(aes(x = data, y = mov_avg, fill = cidade_grande), position = position_stack(reverse = TRUE)) +
-  scale_x_date(x_lab, date_breaks = "2 week", date_labels = "%d/%m") +
-  scale_y_continuous(y_lab, breaks =y_ticks) +
-  scale_colour_manual(color_title, values = color_val, aesthetics = "fill") +
-  ggtitle(title) +
-  theme(legend.position = "bottom")
-ggplot <- ggplotly(plot) %>% 
-  layout(legend = list(orientation = "h", 
-                       x = 0.3, 
-                       y =- 0.25,
-                       title = list(text = "Cidades \t")))
-```
+mun <- read_municipality(code_muni = "SP", year = 2018, simplified = TRUE)
+data_sp.plot2 <- left_join(mun, 
+                           data_sp %>% filter(data == max(data_sp$data)), 
+                           by = c("name_muni" = "municipio"))
+#setting plot information
+fill_title <- "Casos acumulados"
+fill_breaks <- c(10, 100, 1000, 10000, 100000)
+fill_labs <- c("10", "100", "1mil", "10mil", "100mil")
+cidades <- c("São Paulo", "Campinas", "Santos")
 
-```{r}
-ggplot(temp %>% filter(estado == "PE")) +
-  geom_area(aes(x = data, y = mov_avg, fill = cidade_grande), position = position_stack(reverse = TRUE)) +
-  scale_x_date(x_lab, date_breaks = "2 week", date_labels = "%d/%m") +
-  scale_y_continuous(y_lab, breaks =y_ticks) +
-  scale_colour_manual(color_title, values = color_val, aesthetics = "fill") +
-  ggtitle(title) +
-  theme(legend.position = "bottom")
-ggplot <- ggplotly(plot) %>% 
-  layout(legend = list(orientation = "h", 
-                       x = 0.3, 
-                       y =- 0.25,
-                       title = list(text = "Cidades \t")))
+  plot2 <- ggplot(data_sp.plot2) +
+    geom_sf(aes(fill = casosAcumulado)) +
+    scale_fill_continuous(fill_title, type = "viridis", trans = "pseudo_log",
+                          breaks = fill_breaks, labels =  fill_labs) +
+    geom_label_repel(data = data_sp.plot2 %>% 
+                       filter(name_muni %in% cidades), 
+                     aes(label = name_muni, geometry = geom),
+                         stat = "sf_coordinates",
+                         min.segment.length = 0) +
+    theme(axis.line = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text = element_blank(),
+          axis.title = element_blank(),
+          panel.background = element_blank(),
+          panel.grid = element_blank())
+  
+g <- arrangeGrob(plot1, plot2, nrow=2) #generates g
+ggsave(file="test.png", plot = g, width = 210, height = 297, unit = "mm") #saves g
 ```
+<img src = "test.png"></img>
 
