@@ -52,7 +52,7 @@ plot1 <- ggplot(data_sp.plot1) +
   scale_y_continuous(y_lab, breaks = y_ticks, limits = c(0, 5000)) +
   scale_colour_manual(color_title, values = color_val, aesthetics = "fill") +
   ggtitle(title) +
-  theme(legend.position = "bottom")
+  theme(legend.position="none")
 
 data_sp.plot3 <- data_sp.plot1 %>% 
   mutate(casos_mm7d = ifelse(casos_mm7d < 0, 0, casos_mm7d)) %>%
@@ -67,14 +67,14 @@ plot3 <- ggplot(data_sp.plot3) +
             position = position_stack(reverse =  TRUE)) +
   scale_x_date(limits = x_lim) +
   scale_y_continuous(limits = c(-0, 1)) +
-  scale_colour_manual(values = color_val, aesthetics = "fill") +
+  scale_colour_manual(color_title, values = color_val, aesthetics = "fill") +
   theme(axis.line=element_blank(),
       axis.text.x=element_blank(),
       axis.text.y=element_blank(),
       axis.ticks=element_blank(),
       axis.title.x=element_blank(),
       axis.title.y=element_blank(),
-      legend.position="none",
+      legend.position = "bottom",
       panel.background=element_blank(),
       panel.border=element_blank(),
       panel.grid.major=element_blank(),
@@ -106,16 +106,90 @@ plot2 <- ggplot(data_sp.plot2) +
         axis.title = element_blank(),
         panel.background = element_blank(),
         panel.grid = element_blank())
+
+
+##############
+###plot 4
+data_sp.plot4 <- data_sp %>%
+                  group_by(nome_munic) %>% filter(casos_pc != lag(casos_pc))
+data_sp.plot4_l <- data_sp.plot4 %>% filter(nome_munic %in% cidades)
+data_sp.plot4_m <- data_sp.plot4 %>% group_by(datahora) %>%
+  summarise(casos_pc = mean(casos_pc))
+
+x_lim4 <- c(as.Date("2020-03-30"),max(unique(data_sp.plot1$datahora)))
+y_lab4 <- "Casos por 100 mil habitantes"
+y_ticks4 <- c(10, 100, 500, 1000, 1500)
+
+plot4 <- ggplot(data_sp.plot4) +
+  geom_line(aes(x = datahora, y = casos_pc, group = nome_munic), alpha = 0.05) +
+  geom_line(data = data_sp.plot4_l, aes(x = datahora, y = casos_pc, group = nome_munic), color = "#450256") +
+  geom_line(data = data_sp.plot4_m, aes(x = datahora, y = casos_pc), color =  "#f9e721", size = 1) +
+  geom_text_repel(data = data_sp.plot4_l %>%
+                  filter(datahora == max(datahora) - 10), 
+                  aes(x = datahora, y = casos_pc, label = nome_munic)) +
+  scale_y_continuous(y_lab4, breaks = y_ticks4, 
+                     limits = c(0, 1500), trans = "pseudo_log") +
+  scale_x_date(x_lab, date_breaks = "2 week", date_labels = "%d/%m", limits = x_lim4)
+
+
+##########
+#plot 5
+data_sp_isolamento <- read.csv("isolamento.csv", sep = ";", encoding = "UTF-8")
+data_sp_isolamento <- data_sp_isolamento %>% select(nome_munic, media)
+data_sp.plot5 <- data_sp  %>%
+  filter(datahora == max(datahora) - 1) %>% 
+  select(nome_munic, casos_pc) 
+data_sp.plot5 <- left_join(data_sp_isolamento, data_sp.plot5, by = c("nome_munic" = "nome_munic")) %>%
+  filter(!is.na(casos_pc))
+
+data_sp.plot5$casos_pc_d <- "a"
+data_sp.plot5$media_d <- "a"
+for(i in 1:length(data_sp.plot5$media)){
+  aux1 <- data_sp.plot5[i, "media"]
+  aux2 <- data_sp.plot5[i, "casos_pc"]
+  if(aux1 > 0.55){
+    data_sp.plot5[i, "media_d"] <- "(0.55, 0.6]"
+  }else if(aux1 > 0.5){
+    data_sp.plot5[i, "media_d"] <- "(0.5, 0.55]"
+  }else if(aux1 > 0.45){
+    data_sp.plot5[i, "media_d"] <- "(0.45, 0.5]"
+  }else if(aux1 >= 0.4){
+    data_sp.plot5[i, "media_d"] <- "[0.4, 0.45]"
+  }
   
-g <- arrangeGrob(plot1, plot2, nrow=2) #generates g
-ggsave(file="test.png", plot = g, width = 210, height = 297, unit = "mm") #saves g
+  if(aux2 > 1000.){
+    data_sp.plot5[i, "casos_pc_d"] <- "(1000, 2000]"
+  }else if(aux2 > 666.){
+    data_sp.plot5[i, "casos_pc_d"] <- "(666, 1000]"
+  }else if(aux2 > 333.){
+    data_sp.plot5[i, "casos_pc_d"] <- "(333, 666]"
+  }else if(aux2 >= 0.){
+    data_sp.plot5[i, "casos_pc_d"] <- "[0, 333]"
+  }
+}
+data_sp.plot5_df <- as.data.frame(table(data_sp.plot5$media_d, data_sp.plot5$casos_pc_d))
+
+plot5 <- ggplot(data_sp.plot5_df) +
+  geom_tile(aes(x = Var1, y = Var2, fill = Freq), colour = "white") +
+  scale_fill_continuous(type = "viridis") +
+  geom_text(aes(x = Var1, y = Var2, label = Freq), color = "white") +
+  scale_x_discrete("Média do isolamento social") +
+  scale_y_discrete("Casos por 100 mil habitantes") +
+  theme(panel.background = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "none")
 
 
-plotGrob <- rbind(ggplotGrob(plot1), ggplotGrob(plot3))
+##############
+##unindo plots
+
+plotGrob <- rbind(ggplotGrob(plot1), ggplotGrob(plot3), ggplotGrob(plot4))
 panels <- plotGrob$layout$t[grep("panel", plotGrob$layout$name)]
-plotGrob$heights[panels] <- unit(c(0.85, 0.15), "null")
-grid <- grid.arrange(plotGrob, plot2, heights = c(0.6, 0.4))
-ggsave("plot.png", plot = grid, width = 210, height = 297, units = "mm")
+plotGrob$heights[panels] <- unit(c(0.4, 0.1, 0.5), "null")
+
+grid <- grid.arrange(plotGrob, plot2, plot5, layout_matrix = cbind(c(1, 1), c(2, 3)))
+ggsave("plot.png", plot = grid, width = 297, height = 210, units = "mm")
 
 ```
 <img src = "plot.png"></img>
