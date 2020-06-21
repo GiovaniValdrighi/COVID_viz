@@ -49,7 +49,7 @@ color_val <- c("#450256","#21908d", "#f9e721")
 plot1 <- ggplot(data_sp.plot1) +
   geom_area(aes(x = datahora, y = casos_mm7d, fill = tamanho_cidade), position = position_stack(reverse = TRUE)) +
   scale_x_date(x_lab, date_breaks = "2 week", date_labels = "%d/%m", limits = x_lim) +
-  scale_y_continuous(y_lab, breaks = y_ticks, limits = c(0, 7000)) +
+  scale_y_continuous(y_lab, breaks = y_ticks, limits = c(0, 5000)) +
   scale_colour_manual(color_title, values = color_val, aesthetics = "fill") +
   ggtitle(title) +
   theme(legend.position = "bottom")
