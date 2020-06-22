@@ -1,0 +1,50 @@
+.main-container{
+  max-width: 980px !important;
+  margin-left: 0 auto !important;
+}
+
+body{
+	font-family: Arial;
+	text-align: justify;
+	font-size: 12pt;
+	color: black;
+}
+
+h1{
+	font-size: 2m;
+	font-weight: bold;
+	font-family: Arial;
+	color: black;
+}
+#tudo{
+	width: 1280px;
+	font-family: Arial;
+	margin: 0 auto;
+}
+
+#menu{
+	width: 100px;
+	position: relative;
+	left: 100px;
+}
+#icon{
+	text-align: center;
+	color: black;
+	text-decoration: none;
+	font-weight: bold;
+	border: solid;
+	padding: 0px 5px;
+	border-width: 0px 1px;
+}
+
+#icon:hover{
+    background-color: #707070;
+}
+
+
+#texto{
+	width: 980px;
+	position: relative;
+	margin: 0 auto;	
+	text-align: justify;
+}
