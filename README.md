@@ -2,7 +2,7 @@
 
 This project was made in the first semester of 2020 as the final work of the discipline of _Exploratory Data Analysis and Visualization_. The objective of the visualization was to comprehend the dissemination patterns of the COVID-19 cases in the first months of the pandemic, from April to June, in the cities of São Paulo (the state). The discussion about the development of the visualization and the results are available at the following (link)[https://giovanivaldrighi.github.io/COVID_viz/].
 
-[COVID viz](https://raw.githubusercontent.com/GiovaniValdrighi/COVID_viz/master/docs/plot.png)
+![COVID viz](https://raw.githubusercontent.com/GiovaniValdrighi/COVID_viz/master/docs/plot.png)
 
 # Files organization
 
