@@ -1,27 +1,28 @@
 # COVID_viz
 
-This project was made in the first semester of 2020 as the final work of the discipline of _Exploratory Data Analysis and Visualization_. The objective of the visualization was to comprehend the dissemination patterns of the COVID-19 cases in the first months of the pandemic, from April to June, in the cities of São Paulo (the state).
+This project was made in the first semester of 2020 as the final work of the discipline of _Exploratory Data Analysis and Visualization_. The objective of the visualization was to comprehend the dissemination patterns of the COVID-19 cases in the first months of the pandemic, from April to June, in the cities of São Paulo (the state). The discussion about the development of the visualization and the results are available at the following (link)[https://giovanivaldrighi.github.io/COVID_viz/].
 
 # Files organization
 
-The files of the project are dived in the following folders:
+The files of the project are separated in the following folders:
 
-- `/docs`: documentation of the project.
+- `/docs`: files for the web site that contains the documentation of the visualization.
 
-- `/src`: main files of the programming language.
+- `script.Rmd`: main file that generates both the documentation and the final figure. 
 
 # Requirements
 
-You must install the following programs to be able to run my code:
+The visualization was implemented with the (R)[https://www.r-project.org/] language and with (R-studio)[https://www.rstudio.com/] support to generate the markdown file. The used libraries, that can easily installed with R-studio, are: 
 
-1. (Notepad)[https://en.wikipedia.org/wiki/Windows_Notepad]
+- ggplot
+- sf
+- geobr
+- dplyr
+- ggrepel
+- grid
+- gridExtra
+
 
 # How to run
 
-1. Run the file in `/src/file.py` and run the following command on the terminal:
-  
-  > python3 file
-
-# Reference
-
-This template is based on references found (online)[https://github.com/18F/open-source-guide/blob/18f-pages/pages/making-readmes-readable.md].
+1. Run all the cells of the markdown `script.Rmd` using R-studio.
